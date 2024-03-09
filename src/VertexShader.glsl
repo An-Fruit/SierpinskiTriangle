@@ -7,13 +7,6 @@ uniform float horizOffset;
 
 void main()
 {
-    float xPos = aPos.x;
-    float yPos = aPos.y;
-    float zPos = aPos.z;
-
-    //absolute values for position
-    //use this for colors
-
-    gl_Position = vec4(xPos, yPos, zPos, 1.0); // see how we directly give a vec3 to vec4's constructor
+    gl_Position = vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor
     ourColor = aColor;
 }

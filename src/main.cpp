@@ -24,9 +24,7 @@ const unsigned int SCR_HEIGHT = 800;
 
 
 /**
- * Main Execution point of the program
- * 
- * The main work of the render loop takes place here
+ * Entry point of the program, also where the main logic of the render loop takes place
 */
 int main()
 {
@@ -100,6 +98,8 @@ int main()
 /**
  * Method that gives the initial pts of a sierpinski triangle, then calls the recursive
  * function to add necessary vertices to a vector of floats
+ * @param points the vector we wish to add vertex coordinates to
+ * post: points contains the vertex information of a Sierpinski Triangle
 */
 void initSierpinski(std::vector<float> &points){
     point_t a = {-0.5f, -0.5f,  0.0f};
@@ -111,6 +111,10 @@ void initSierpinski(std::vector<float> &points){
 
 /**
  * Helper method to calculate midpoint between two coordinates in 3d space
+ * @param a the first point
+ * @param b the second point
+ * @return a point that contains the x, y, z midpoint coordinates between
+ *         'a' and 'b'
 */
 point_t midpoint(point_t a, point_t b){
     point_t p;
@@ -122,6 +126,12 @@ point_t midpoint(point_t a, point_t b){
 
 /**
  * Helper function that adds all the position and color values of a vertex into a vector of floats
+ * @param p a point that contains the x, y, z values that we wish to add to the vector
+ * @param depth the current recursive depth of the point for which we wish to draw
+ *              we will use this value to determine what the blue color of the vertex should be
+ * @param points a reference to a vector to which we add the necessary vertex data (color and position)
+ * pre: none
+ * post: points contains the needed position and color data
 */
 void addPosAndColor(point_t p, int depth, std::vector<float> &points){
         points.push_back(p.x);
@@ -159,17 +169,28 @@ void addSierpinskiPts(point_t a, point_t b, point_t c, int depth, std::vector<fl
 }
 
 
-// process all input: query GLFW whether relevant keys
-// are pressed/released this frame and react accordingly
-// ----------------------------------------------------------------
+/**
+ * Process all user input by querying GLFW whether relevant
+ * keys are pressed or released during the current frame, and
+ * react accordingly.
+ * For our current implementation, close the window if the user
+ * presses the escape key.
+ * @param window the window for which we want to focus on keypresses
+ * pre: window is a valid window
+ * post: close the window if the user presses the escape key
+*/
 void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, 1);
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
+/**
+ * glfw: whenever the window size changed (by OS or user resize) this callback function executes
+ * @param window the window that is being resized
+ * @param width the width to resize to
+ * @param height the height to resize to
+*/
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and 
@@ -181,6 +202,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
  * Sets up a GLFW Window and loads the OpenGL function pointers
  * @return NULL if we failed to initialize the GLFW window or the function pointers
  *          otherwise, return a GLFWwindow pointer to the initialized window
+ * post: - OpenGL function pointers are properly initialized
+ *       - return a pointer to the GLFWwindow that has been initialized
 */
 GLFWwindow* glfwOpenGLInit(){
 // glfw: initialize to context version 3.3
@@ -217,7 +240,13 @@ GLFWwindow* glfwOpenGLInit(){
 /**
  * Generates a vertex array object for the VAO and a Vertex Buffer object for the VBO. 
  * Then loads the vertices of the sierpinski triangle into the VBO.
- * post: unbinds VAOs/VBOs
+ * @param VAO a reference to a VAO id
+ * @param VBO a reference to a VBO id
+ * post: - VAO is associated with VBO being bound to GL_ARRAY_BUFFER
+ *       - the vertices of a sierpinski triangle are located in Vertex Buffer Object who's
+ *         ID is given by VBO
+ *       - VAOs and VBOs are unbound
+ *       
 */
 void sierpinskiOpenGLObj(unsigned int &VAO, unsigned int &VBO){
     //---------FILLING VERTICES WITH POINTS OF SIERPINSKI TRIANGLE-----------
@@ -252,7 +281,14 @@ void sierpinskiOpenGLObj(unsigned int &VAO, unsigned int &VBO){
 
 /**
  * Generates VAOs/VBOs/EBOs for the background rectangle
- * post: unbinds VAOs/VBOs/EBOs
+ * @param VAO a reference to an ID of a Vertex Array Object
+ * @param VBO  a reference to an ID of a Vertex Buffer Object
+ * @param EBO a reference to an ID of a Element Buffer Object
+ * post: - VAO is associated with the element/object buffers of VBO and EBO
+ *       - EBO is bound to a GL_ELEMENT_ARRAY_BUFFER that contains
+ *         the draw order of the rectangle
+ *       - VBO is bound to a GL_ARRAY_BUFFER that contains the vertices
+ *         of the rectangle
  * 
 */
 void backgroundOpenGLObj(unsigned int &VAO, unsigned int &VBO, unsigned int &EBO){

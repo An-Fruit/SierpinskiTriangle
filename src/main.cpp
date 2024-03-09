@@ -8,121 +8,45 @@
 #include "shader.h"
 #include "mytypes.h"
 
-#define MAX_SIERPINSKI_DEPTH 8      //change this to allow for more recursive depth for Sierpinski's Triangle
+#define MAX_SIERPINSKI_DEPTH 8      //change this to allow for more recursive depth for
+                                    // Sierpinski's Triangle
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void addSierpinskiPts(point_t a, point_t b, point_t c, int depth, std::vector<float>& points);
 void initSierpinski(std::vector<float> &points);
+void sierpinskiOpenGLObj(unsigned int &VAO, unsigned int &VBO);
+void backgroundOpenGLObj(unsigned int &VAO, unsigned int &VBO, unsigned int &EBO);
+GLFWwindow* glfwOpenGLInit();
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 
 
+/**
+ * Main Execution point of the program
+ * 
+ * The main work of the render loop takes place here
+*/
 int main()
 {
-    // glfw: initialize to context version 3.3
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    //-----------INTIIALIZE GLFW AND LOAD OPENGL FUNCTION POINTERS---------------------------------
-
-    // glfw window creation
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
-        printf("Failed to init window\n");
-        glfwTerminate();
+    GLFWwindow *window = glfwOpenGLInit();
+    if(window == NULL){
         return -1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // glad: load all OpenGL function pointers
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        printf("Failed to load all OpenGL function pointers\n");
-        glfwTerminate();
-        return -1;
-    }    
-    //-----------FINISHED INITIALIZING GLFW AND LOADING OPENGL FUNCTION POINTERS-------------------
-
-
-    //------------------------------------INTIALIZE SHADERS----------------------------------------
     Shader myShader("VertexShader.glsl", "FragmentShader.glsl");
-    //------------------------------------DONE INTIALIZING SHADERS---------------------------------
-    
-    //--------VERTICES FOR THE BACKGROUND----------------
-    float rect[] = {
-        //position              //color
-        -1.0f, -1.0f,  0.5f,    1.0f,  1.0f,  0.5f,     //bottom left
-        -1.0f,  1.0f,  1.0f,    1.0f,  1.0f,  0.125f,   //top left
-         1.0f,  1.0f, -1.0f,    1.0f,  1.0f,  0.125f,   //top right
-         1.0f, -1.0f,  0.5f,    1.0f,  1.0f,  0.5f      //bottom right
-    };
-    unsigned int drawOrder[] = {
-        0, 1, 2,    //triangle one (top left)
-        0, 2, 3     //triangle two (bottom right)
-    };
-    //--------VERTICES FOR THE BACKGROUND----------------
 
-    //---------FILLING VERTICES WITH POINTS OF SIERPINSKI TRIANGLE-----------
-    std::vector<float> points = {};
-    initSierpinski(points);
-    size_t len = points.size();
-    float vertices[len];
-    //add all elements into array so we can put it in the VBO
-    for(int i = 0; i < len; i++){
-        vertices[i] = points.at(i);
-    }
-    //---------FILLING VERTICES WITH POINTS OF SIERPINSKI TRIANGLE-----------
-
-    //VAOs and VBOs for sierpinski triangle
     unsigned int triVAO, triVBO;
-    glGenVertexArrays(1, &triVAO);
-    glGenBuffers(1, &triVBO);
-
-    glBindVertexArray(triVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, triVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //assigning first attribute (position)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    //assign second attribute (color);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
+    sierpinskiOpenGLObj(triVAO, triVBO);
 
 
     //VAOs, VBOs, EBOs for the background
     unsigned int bgVAO, bgVBO, bgEBO;
-    glGenVertexArrays(1, &bgVAO);
-    glGenBuffers(1, &bgVBO);
-    glGenBuffers(1, &bgEBO);
-
-    glBindVertexArray(bgVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, bgVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bgEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(drawOrder), drawOrder, GL_STATIC_DRAW);
-    
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);   //unbind VBOs
-    glBindVertexArray(0);       //unbind VAOs
+    backgroundOpenGLObj(bgVAO, bgVBO, bgEBO);
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);   //uncomment to draw in wireframe mode
-    //render loop
+    //---------------RENDER LOOP-------------------
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -141,7 +65,6 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, bgVBO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
         //render sierpinski triangle
         glBindVertexArray(triVAO);
         int nBufferSize = 0;
@@ -150,7 +73,7 @@ int main()
         for(int i = 0; i < nBufferSize; i+= 3){
             glDrawArrays(GL_TRIANGLES, i, 3);
         }
-
+        glBindVertexArray(0);
 
         
  
@@ -159,10 +82,14 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    //---------------FINISHED RENDER LOOP-------------------
 
-    //deallocate resources
+    //finished rendering, deallocate resources
     glDeleteVertexArrays(1, &triVAO);
     glDeleteBuffers(1, &triVBO);
+    glDeleteVertexArrays(1, &bgVAO);
+    glDeleteBuffers(1, &bgVBO);
+    glDeleteBuffers(1, &bgEBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -170,7 +97,10 @@ int main()
     return 0;
 }
 
-
+/**
+ * Method that gives the initial pts of a sierpinski triangle, then calls the recursive
+ * function to add necessary vertices to a vector of floats
+*/
 void initSierpinski(std::vector<float> &points){
     point_t a = {-0.5f, -0.5f,  0.0f};
     point_t b = { 0.0f,  0.5f,  0.0f};
@@ -191,27 +121,12 @@ point_t midpoint(point_t a, point_t b){
 }
 
 /**
- * Helper function that adds all the position and color values into a vector of floats
+ * Helper function that adds all the position and color values of a vertex into a vector of floats
 */
-void addPosAndColor(point_t a, point_t b, point_t c, int depth, std::vector<float> &points){
-        points.push_back(a.x);
-        points.push_back(a.y);
-        points.push_back(a.z);
-        points.push_back(0.25f);
-        points.push_back(depth * 1.0/MAX_SIERPINSKI_DEPTH);
-        points.push_back(0.75f);
-
-        points.push_back(b.x);
-        points.push_back(b.y);
-        points.push_back(b.z);
-        points.push_back(0.25f);
-        points.push_back(depth * 1.0/MAX_SIERPINSKI_DEPTH);
-        points.push_back(0.75f);
-
-
-        points.push_back(c.x);
-        points.push_back(c.y);
-        points.push_back(c.z);
+void addPosAndColor(point_t p, int depth, std::vector<float> &points){
+        points.push_back(p.x);
+        points.push_back(p.y);
+        points.push_back(p.z);
         points.push_back(0.25f);
         points.push_back(depth * 1.0/MAX_SIERPINSKI_DEPTH);
         points.push_back(0.75f);
@@ -230,7 +145,9 @@ void addPosAndColor(point_t a, point_t b, point_t c, int depth, std::vector<floa
  */
 void addSierpinskiPts(point_t a, point_t b, point_t c, int depth, std::vector<float>& points){
     if(depth <= MAX_SIERPINSKI_DEPTH){
-        addPosAndColor(a, b, c, depth, points);
+        addPosAndColor(a, depth, points);
+        addPosAndColor(b, depth, points);
+        addPosAndColor(c, depth, points);
 
         point_t ab = midpoint(a, b);
         point_t ac = midpoint(a, c);
@@ -242,8 +159,9 @@ void addSierpinskiPts(point_t a, point_t b, point_t c, int depth, std::vector<fl
 }
 
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
+// process all input: query GLFW whether relevant keys
+// are pressed/released this frame and react accordingly
+// ----------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -257,4 +175,119 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+/**
+ * Sets up a GLFW Window and loads the OpenGL function pointers
+ * @return NULL if we failed to initialize the GLFW window or the function pointers
+ *          otherwise, return a GLFWwindow pointer to the initialized window
+*/
+GLFWwindow* glfwOpenGLInit(){
+// glfw: initialize to context version 3.3
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    // glfw window creation
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    if (window == NULL)
+    {
+        printf("Failed to init window\n");
+        glfwTerminate();
+        return NULL;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    // glad: load all OpenGL function pointers
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        printf("Failed to load all OpenGL function pointers\n");
+        glfwTerminate();
+        return NULL;
+    }
+    return window;    
+}
+
+/**
+ * Generates a vertex array object for the VAO and a Vertex Buffer object for the VBO. 
+ * Then loads the vertices of the sierpinski triangle into the VBO.
+ * post: unbinds VAOs/VBOs
+*/
+void sierpinskiOpenGLObj(unsigned int &VAO, unsigned int &VBO){
+    //---------FILLING VERTICES WITH POINTS OF SIERPINSKI TRIANGLE-----------
+    std::vector<float> points = {};
+    initSierpinski(points);
+    const size_t len = points.size();
+    float vertices[len];
+    //add all elements into array so we can put it in the VBO
+    for(int i = 0; i < len; i++){
+        vertices[i] = points.at(i);
+    }
+    //---------FILLING VERTICES WITH POINTS OF SIERPINSKI TRIANGLE-----------
+
+    //VAOs and VBOs for sierpinski triangle
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    //assigning first attribute (position)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    //assign second attribute (color);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);       //unbind VAO
+    glBindBuffer(GL_ARRAY_BUFFER, 0);   //safely unbind VBO without dissasociating it from VAO
+}
+
+
+/**
+ * Generates VAOs/VBOs/EBOs for the background rectangle
+ * post: unbinds VAOs/VBOs/EBOs
+ * 
+*/
+void backgroundOpenGLObj(unsigned int &VAO, unsigned int &VBO, unsigned int &EBO){
+    //--------VERTICES FOR THE BACKGROUND----------------
+    float rect[] = {
+        //position              //color
+        -1.0f, -1.0f,  0.5f,    0.0f,  0.0f,  0.5f,     //bottom left
+        -1.0f,  1.0f,  1.0f,    1.0f,  1.0f,  0.125f,   //top left
+         1.0f,  1.0f, -1.0f,    1.0f,  1.0f,  0.125f,   //top right
+         1.0f, -1.0f,  0.5f,    1.0f,  1.0f,  0.5f      //bottom right
+    };
+    unsigned int drawOrder[] = {
+        0, 1, 2,    //triangle one (top left)
+        0, 2, 3     //triangle two (bottom right)
+    };
+    //--------VERTICES FOR THE BACKGROUND----------------
+
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(drawOrder), drawOrder, GL_STATIC_DRAW);
+    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*) 0);
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);       //unbind VAO 1st to avoid dissociating bound array/element buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0);   //safely unbind VBOs w/o dissociating from VAO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);   //safely unbind EBOs w/o dissociating from VAO
 }

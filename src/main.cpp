@@ -24,7 +24,7 @@ const unsigned int SCR_HEIGHT = 800;
 
 
 /**
- * Entry point of the program, also where the main logic of the render loop takes place
+ * Entry point of the program, also where the main logic of rendering takes place
 */
 int main()
 {
@@ -65,15 +65,11 @@ int main()
 
         //render sierpinski triangle
         glBindVertexArray(triVAO);
-        int nBufferSize = 0;
+        int triBufSize = 0;
         glBindBuffer(GL_ARRAY_BUFFER, triVBO);
-        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &nBufferSize);
-        for(int i = 0; i < nBufferSize; i+= 3){
-            glDrawArrays(GL_TRIANGLES, i, 3);
-        }
+        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &triBufSize);
+        glDrawArrays(GL_TRIANGLES, 0, triBufSize);
         glBindVertexArray(0);
-
-        
  
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
